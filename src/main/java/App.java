@@ -174,7 +174,7 @@ public class App {
         }
 
         /** POST /facts */
-        void createFact(HttpExchange exchange) throws IOException {
+        void createFact(HttpExchange exchange) throws IOException, SQLException {
             String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
 
             NewFact input;
@@ -195,10 +195,19 @@ public class App {
                 return;
             }
 
-            CatFact created = new CatFact(nextId, text);
-            appendToCsv(created);
-            facts.add(created);
-            nextId++;
+            CatFact created;
+            String sql = "INSERT INTO facts (fact) VALUES (?) RETURNING id";
+            try (Connection conn = DriverManager.getConnection(DB_URL);
+                PreparedStatement pstmt = conn.prepareStatement(sql))
+            {
+                pstmt.setString(1, text);
+
+                try (ResultSet rs = pstmt.executeQuery())
+                {
+                    rs.next();
+                    created = new CatFact(rs.getInt("id"), text);
+                }
+            }
 
             exchange.getResponseHeaders().set("Location", "/facts/" + created.id());
             sendJson(exchange, 201, created);
