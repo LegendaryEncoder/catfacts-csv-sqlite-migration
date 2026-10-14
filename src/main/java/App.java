@@ -11,7 +11,6 @@ import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.util.ArrayList;
@@ -54,12 +53,6 @@ public class App {
             facts.add(new CatFact(id, fact));
             nextId = Math.max(nextId, id + 1);
         }
-    }
-
-    /** Appends one fact to the end of facts.csv as "id,fact". */
-    static void appendToCsv(CatFact fact) throws IOException {
-        Files.writeString(CSV_FILE, fact.id() + "," + fact.fact() + "\n",
-                StandardCharsets.UTF_8, StandardOpenOption.APPEND);
     }
 
     static final Gson gson = new GsonBuilder()
