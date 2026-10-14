@@ -189,11 +189,6 @@ public class App {
                 return;
             }
             String text = input.fact().trim();
-            if (text.contains("\n") || text.contains("\r")) {
-                // One fact per line is how facts.csv is laid out.
-                sendJson(exchange, 400, new ErrorBody("\"fact\" must be a single line"));
-                return;
-            }
 
             CatFact created;
             String sql = "INSERT INTO facts (fact) VALUES (?) RETURNING id";
