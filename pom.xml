@@ -14,6 +14,16 @@
     </properties>
 
     <dependencies>
+    <dependency>
+        <groupId>com.google.code.gson</groupId>
+        <artifactId>gson</artifactId>
+        <version>...</version>
+    </dependency>
+    <dependency>
+        <groupId>org.xerial</groupId>
+        <artifactId>sqlite-jdbc</artifactId>
+        <version>VERSION_FROM_MAVEN_CENTRAL</version>
+    </dependency>    
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
