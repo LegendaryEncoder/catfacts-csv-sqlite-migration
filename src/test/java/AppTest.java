@@ -1,6 +1,7 @@
 
 import org.junit.jupiter.api.Test;
 
+import org.junit.jupiter.api.BeforeEach;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -10,10 +11,16 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class AppTest {
 
-    @Test 
-    void catFactKeepsTheValuesItWasBuiltWith() 
+    @BeforeEach
+    void resetSharedState()
     {
-        App.catFact fact = new App.catFact(42, "Cats sleep a lot");
+        App.facts.clear();
+    }
+
+    @Test 
+    void CatFactKeepsTheValuesItWasBuiltWith() 
+    {
+        App.CatFact fact = new App.CatFact(42, "Cats sleep a lot");
 
         assertEquals(42, fact.id());
         assertEquals("Cats sleep a lot", fact.fact());
@@ -22,8 +29,8 @@ public class AppTest {
     @Test 
     void twoCatFactsWithSameValuesAreEqual()
     {
-        App.catFact a = new App.catFact(1, "Cats purr");
-        App.catFact b = new App.catFact(1, "Cats purr");
+        App.CatFact a = new App.CatFact(1, "Cats purr");
+        App.CatFact b = new App.CatFact(1, "Cats purr");
 
         assertEquals(a, b);
     }
@@ -31,8 +38,8 @@ public class AppTest {
     @Test 
     void twoCatFactsWithDifferentTextAreNotEqual()
     {
-        App.catFact a = new App.catFact(1, "Cats purr");
-        App.catFact b = new App.catFact(1, "Cats hiss");
+        App.CatFact a = new App.CatFact(1, "Cats purr");
+        App.CatFact b = new App.CatFact(1, "Cats hiss");
 
         assertNotEquals(a, b);
     }
@@ -40,32 +47,32 @@ public class AppTest {
     @Test 
     void listFindsCatFactByValuesNotByObject()
     {
-        List<App.catFact> list = new ArrayList<>();
-        list.add(new App.catFact(1, "Cats purr"));
+        List<App.CatFact> list = new ArrayList<>();
+        list.add(new App.CatFact(1, "Cats purr"));
         
-        assertTrue(list.contains(new App.catFact(1, "Cats purr")));
+        assertTrue(list.contains(new App.CatFact(1, "Cats purr")));
     }
 
     @Test 
-    void newFactGivesBackItsText()
+    void NewFactGivesBackItsText()
     {
-        App.newFact newFact = new App.newFact("Cats have whiskers");
+        App.NewFact NewFact = new App.NewFact("Cats have whiskers");
 
-        assertEquals("Cats have whiskers", newFact.fact());
+        assertEquals("Cats have whiskers", NewFact.fact());
     }
 
     @Test 
-    void errorBodyGivesBackItsMessage()
+    void ErrorBodyGivesBackItsMessage()
     {
-        App.errorBody body = new App.errorBody("not found");
+        App.ErrorBody body = new App.ErrorBody("not found");
 
         assertEquals("not found", body.error());
     }
 
     @Test
-    void catFactCanHoldEmptyText()
+    void CatFactCanHoldEmptyText()
     {
-        App.catFact fact = new App.catFact(1, "");
+        App.CatFact fact = new App.CatFact(1, "");
 
         assertNotNull(fact);
         assertEquals("", fact.fact());
@@ -74,7 +81,7 @@ public class AppTest {
     @Test 
     void serializedCatFactContainsBothFields()
     {
-        App.catFact fact = new App.catFact(9, "Cats are curious");
+        App.CatFact fact = new App.CatFact(9, "Cats are curious");
 
         String json = App.gson.toJson(fact);
 
@@ -87,15 +94,15 @@ public class AppTest {
     {
         String json =  "{\"fact\": \"Cats have three eyelids\"}";
 
-        App.newFact newFact = App.gson.fromJson(json, App.newFact.class);
+        App.NewFact NewFact = App.gson.fromJson(json, App.NewFact.class);
 
-        assertEquals("Cats have three eyelids", newFact.fact());
+        assertEquals("Cats have three eyelids", NewFact.fact());
     }
 
     @Test 
     void apostropheIsNotEscapedByGson()
     {
-        App.catFact fact = new App.catFact(1, "A cat's nose print is unique");
+        App.CatFact fact = new App.CatFact(1, "A cat's nose print is unique");
 
         String json = App.gson.toJson(fact);
 
@@ -106,11 +113,68 @@ public class AppTest {
     @Test 
     void factWithCommasSurvivesRoundTrip()
     {
-        App.catFact original = new App.catFact(9, "Cats, like people, tend to favor one paw over the other");
+        App.CatFact original = new App.CatFact(9, "Cats, like people, tend to favor one paw over the other");
 
         String json = App.gson.toJson(original);
-        App.catFact restored = App.gson.fromJson(json, App.catFact.class);
+        App.CatFact restored = App.gson.fromJson(json, App.CatFact.class);
 
         assertEquals(original, restored);
     }
+
+    @Test 
+    void loadFromCsvReadsEveryRow() throws Exception
+    {
+        App.loadFromCsv();
+
+        assertEquals(10, App.facts.size());
+    }
+
+    @Test 
+    void factWithCommasIsStoredWhole() throws Exception
+    {
+        App.loadFromCsv();
+
+        App.CatFact nine = null;
+        for (App.CatFact f : App.facts)
+        {
+            if (f.id() == 9)
+            {
+                nine = f;
+            }
+        }
+
+        assertNotNull(nine);
+        assertEquals("Cats, like people, tend to favor one paw over the other", nine.fact());
+    }
+
+    @Test 
+    void idsComeFromTheFile() throws Exception
+    {
+        App.loadFromCsv();
+
+        assertEquals(1, App.facts.get(0).id());
+    }
+
+    @Test 
+    void nextIdIsOnePastHighestIdInFile() throws Exception
+    {
+        App.loadFromCsv();
+
+        assertEquals(11, App.nextId);
+    }
+
+    @Test 
+    void loadingTwiceDoesNotDoubleTheFacts() throws Exception
+    {
+        App.loadFromCsv();
+        int afterOneLoad = App.facts.size();
+
+        App.loadFromCsv();
+
+        assertEquals(afterOneLoad, App.facts.size());
+    }
+
+    /*
+    Test 8 passes as CatFact record accepts empty text.
+    Test 17 fails, it tired to add from loadFromCsv to App.facts without clearing first. */
 }
