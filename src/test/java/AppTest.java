@@ -70,4 +70,47 @@ public class AppTest {
         assertNotNull(fact);
         assertEquals("", fact.fact());
     }
+
+    @Test 
+    void serializedCatFactContainsBothFields()
+    {
+        App.catFact fact = new App.catFact(9, "Cats are curious");
+
+        String json = App.gson.toJson(fact);
+
+        assertTrue(json.contains("\"id\": 9"));
+        assertTrue(json.contains("Cats are curious"));
+    }
+
+    @Test 
+    void jsonBodyDeserializesIntoNewFact()
+    {
+        String json =  "{\"fact\": \"Cats have three eyelids\"}";
+
+        App.newFact newFact = App.gson.fromJson(json, App.newFact.class);
+
+        assertEquals("Cats have three eyelids", newFact.fact());
+    }
+
+    @Test 
+    void apostropheIsNotEscapedByGson()
+    {
+        App.catFact fact = new App.catFact(1, "A cat's nose print is unique");
+
+        String json = App.gson.toJson(fact);
+
+        assertTrue(json.contains("cat's"));
+        assertFalse(json.contains("\\u0027"));
+    }
+
+    @Test 
+    void factWithCommasSurvivesRoundTrip()
+    {
+        App.catFact original = new App.catFact(9, "Cats, like people, tend to favor one paw over the other");
+
+        String json = App.gson.toJson(original);
+        App.catFact restored = App.gson.fromJson(json, App.catFact.class);
+
+        assertEquals(original, restored);
+    }
 }
