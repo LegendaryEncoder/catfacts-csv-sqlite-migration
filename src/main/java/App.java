@@ -15,6 +15,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -111,9 +112,20 @@ public class App {
                 sendJson(exchange, 400, new ErrorBody("id must be a whole number"));
                 return;
             }
-            if (method.equals("GET")) {
-                getFactById(exchange, id);
-            } else {
+            if (method.equals("GET")) 
+            {
+                Optional<CatFact> found = findFactById(DB_URL, id);
+                if (found.isPresent()) 
+                {
+                    sendJson(exchange, 200, found.get());
+                } 
+                else 
+                {
+                    sendJson(exchange, 404, new ErrorBody("no fact with id " + id));
+                }
+            } 
+            else 
+            {
                 sendJson(exchange, 405, new ErrorBody("method not allowed"));
             }
         }
@@ -139,11 +151,35 @@ public class App {
         }
 
         /** GET /facts/{id} */
-        void getFactById(HttpExchange exchange, int id) throws IOException, SQLException 
-        {
+        // void getFactById(HttpExchange exchange, int id) throws IOException, SQLException 
+        // {
 
+        //     String sql = "SELECT id, fact FROM facts WHERE id = ?";
+        //     try (Connection conn = DriverManager.getConnection(DB_URL);
+        //         PreparedStatement pstmt = conn.prepareStatement(sql))
+        //     {
+        //         pstmt.setInt(1, id);
+
+        //         try (ResultSet rs = pstmt.executeQuery())
+        //         {
+        //             if (rs.next())
+        //             {
+        //                 CatFact fact = new CatFact(rs.getInt("id"), rs.getString("fact"));
+        //                 sendJson(exchange, 200, fact);
+        //             }
+        //             else
+        //             {
+        //                 sendJson(exchange, 404, new ErrorBody("no fact with id " + id));
+        //             }
+        //         }
+        //     }
+        // }
+
+        Optional<CatFact> findFactById(String dbUrl, int id) throws SQLException
+        {
+            
             String sql = "SELECT id, fact FROM facts WHERE id = ?";
-            try (Connection conn = DriverManager.getConnection(DB_URL);
+            try (Connection conn = DriverManager.getConnection(dbUrl);
                 PreparedStatement pstmt = conn.prepareStatement(sql))
             {
                 pstmt.setInt(1, id);
@@ -152,13 +188,9 @@ public class App {
                 {
                     if (rs.next())
                     {
-                        CatFact fact = new CatFact(rs.getInt("id"), rs.getString("fact"));
-                        sendJson(exchange, 200, fact);
+                        return Optional.of(new CatFact(rs.getInt("id"), rs.getString("fact")));
                     }
-                    else
-                    {
-                        sendJson(exchange, 404, new ErrorBody("no fact with id " + id));
-                    }
+                    return Optional.empty();
                 }
             }
         }
