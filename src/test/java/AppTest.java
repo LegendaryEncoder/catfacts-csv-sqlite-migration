@@ -2,6 +2,7 @@
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.util.Optional;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -205,4 +206,39 @@ public class AppTest {
         assertEquals(1, facts.get(0).id());
         assertEquals("Cats, oddly, cannot taste sweetness", facts.get(1).fact());
     }
+
+    private String createTestDb() throws Exception
+    {
+        String url = "jdbc:sqlite:" + tempDir.resolve("test.db");
+        try (Connection c = DriverManager.getConnection(url);
+            Statement s = c.createStatement())
+        {
+            s.executeUpdate("CREATE TABLE facts (id INTEGER PRIMARY KEY AUTOINCREMENT, fact TEXT NOT NULL)");
+            s.executeUpdate("INSERT INTO facts (id, fact) VALUES (1, 'Cats purr')");
+            s.executeUpdate("INSERT INTO facts (id, fact) VALUES (2, 'Cats, oddly, cannot taste sweetness')");
+        }
+        
+        return url;
+    }
+
+    @Test 
+    void findFactByIdReturnsTheFactWhenTheIdExists() throws Exception
+    {
+        String url = createTestDb();
+
+        Optional<App.CatFact> found = new App.FactsHandler().findFactById(url,2);
+
+        assertTrue(found.isPresent());
+        assertEquals(new App.CatFact(2, "Cats, oddly, cannot taste sweetness"), found.get());
+    }
+
+    @Test
+    void findFactByIdReturnsEmptyWhenTheIdDoesNotExist() throws Exception
+    {
+        String url = createTestDb();
+
+        Optional<App.CatFact> found = new App.FactsHandler().findFactById(url, 99);
+
+        assertFalse(found.isPresent());
+    }   
 }
